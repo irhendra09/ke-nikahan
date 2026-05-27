@@ -1,0 +1,153 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Profile {
+  id          String       @id @db.Uuid
+  fullName    String?      @map("full_name")
+  phone       String?
+  role        Role         @default(user)
+  createdAt   DateTime     @default(now()) @map("created_at")
+
+  invitations Invitation[]
+  orders      Order[]
+
+  @@map("profiles")
+}
+
+model Template {
+  id           String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name         String
+  slug         String       @unique
+  category     Category
+  thumbnailUrl String?      @map("thumbnail_url")
+  basePrice    Int          @default(49000) @map("base_price")
+  isActive     Boolean      @default(true) @map("is_active")
+  createdAt    DateTime     @default(now()) @map("created_at")
+
+  invitations  Invitation[]
+
+  @@map("templates")
+}
+
+model Order {
+  id                 String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId             String      @map("user_id") @db.Uuid
+  paymentGatewayId   String?     @unique @map("payment_gateway_id")
+  amount             Int
+  status             OrderStatus @default(pending)
+  packageType        PackageType @default(basic) @map("package_type")
+  paidAt             DateTime?   @map("paid_at")
+  createdAt          DateTime    @default(now()) @map("created_at")
+
+  user               Profile     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  invitation         Invitation?
+
+  @@map("orders")
+}
+
+model Invitation {
+  id         String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String           @map("user_id") @db.Uuid
+  templateId String           @map("template_id") @db.Uuid
+  orderId    String?          @unique @map("order_id") @db.Uuid
+  slug       String           @unique
+  content    Json             @default("{}")
+  status     InvitationStatus @default(draft)
+  eventDate  DateTime?        @map("event_date") @db.Date
+  expiresAt  DateTime?        @map("expires_at")
+  viewCount  Int              @default(0) @map("view_count")
+  createdAt  DateTime         @default(now()) @map("created_at")
+
+  user       Profile          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  template   Template         @relation(fields: [templateId], references: [id])
+  order      Order?           @relation(fields: [orderId], references: [id])
+  rsvps      Rsvp[]
+  wishes     Wish[]
+  guests     Guest[]
+
+  @@index([slug])
+  @@index([userId])
+  @@map("invitations")
+}
+
+model Rsvp {
+  id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  invitationId String     @map("invitation_id") @db.Uuid
+  name         String
+  phone        String?
+  guestCount   Int        @default(1) @map("guest_count")
+  attendance   Attendance
+  createdAt    DateTime   @default(now()) @map("created_at")
+
+  invitation   Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+
+  @@map("rsvps")
+}
+
+model Wish {
+  id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  invitationId String     @map("invitation_id") @db.Uuid
+  name         String
+  message      String
+  isApproved   Boolean    @default(true) @map("is_approved")
+  createdAt    DateTime   @default(now()) @map("created_at")
+
+  invitation   Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+
+  @@map("wishes")
+}
+
+model Guest {
+  id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  invitationId String     @map("invitation_id") @db.Uuid
+  name         String
+  phone        String?
+  qrCode       String?    @unique @map("qr_code")
+  isCheckedIn  Boolean    @default(false) @map("is_checked_in")
+  createdAt    DateTime   @default(now()) @map("created_at")
+
+  invitation   Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+
+  @@map("guests")
+}
+
+enum Role {
+  user
+  admin
+}
+
+enum Category {
+  nikah
+  ulang_tahun
+  khitanan
+  lainnya
+}
+
+enum OrderStatus {
+  pending
+  paid
+  expired
+  failed
+}
+
+enum PackageType {
+  basic
+  premium
+}
+
+enum InvitationStatus {
+  draft
+  active
+  expired
+}
+
+enum Attendance {
+  hadir
+  tidak_hadir
+  mungkin
+}
