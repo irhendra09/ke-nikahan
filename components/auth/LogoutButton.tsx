@@ -1,14 +1,16 @@
 'use client'
 
-import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 
-export default function LogoutButton() {
+interface LogoutButtonProps {
+    className?: string
+}
+
+export default function LogoutButton({ className }: LogoutButtonProps) {
     const router = useRouter()
-    const supabase = createClient()
 
     async function handleLogout() {
-        await supabase.auth.signOut()
+        await fetch('/api/auth/logout', { method: 'POST' })
         router.push('/login')
         router.refresh()
     }
@@ -16,10 +18,9 @@ export default function LogoutButton() {
     return (
         <button
             onClick={handleLogout}
-            className="text-sm text-gray-500 hover:text-gray-900 transition-colors
-                 border border-gray-200 px-4 py-2 rounded-lg hover:bg-gray-50"
+            className={className || "text-sm font-medium text-zinc-500 hover:text-amber-500 transition-colors"}
         >
-            Keluar
+            Logout
         </button>
     )
 }

@@ -1,6 +1,5 @@
 'use client'
 
-import { createClient } from '@/lib/supabase/client'
 import { useState } from 'react'
 import { Wish } from '@/lib/types/invitation'
 
@@ -10,7 +9,7 @@ type Props = {
     onWishAdded: (wish: Wish) => void
 }
 
-function timeAgo(dateStr: string) {
+function timeAgo(dateStr: string | Date) {
     const diff = Date.now() - new Date(dateStr).getTime()
     const mins = Math.floor(diff / 60000)
     const hours = Math.floor(diff / 3600000)
@@ -22,7 +21,6 @@ function timeAgo(dateStr: string) {
 }
 
 export default function WishSection({ invitationId, wishes, onWishAdded }: Props) {
-    const supabase = createClient()
     const [name, setName] = useState('')
     const [message, setMessage] = useState('')
     const [loading, setLoading] = useState(false)
@@ -32,21 +30,35 @@ export default function WishSection({ invitationId, wishes, onWishAdded }: Props
         e.preventDefault()
         setLoading(true)
 
-        const { data, error } = await supabase
-            .from('wishes')
-            .insert({ invitation_id: invitationId, name, message })
-            .select()
-            .single()
+        try {
+            const response = await fetch('/api/wish', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    invitationId,
+                    name,
+                    message,
+                }),
+            });
 
-        if (!error && data) {
+            if (!response.ok) {
+                throw new Error('Failed to submit wish');
+            }
+
+            const data = await response.json();
+            
+            // Map Prisma fields to existing Wish type if needed
+            // (Standardizing created_at to string or Date as expected by Wish type)
             onWishAdded(data as Wish)
             setSent(true)
             setName('')
             setMessage('')
             setTimeout(() => setSent(false), 3000)
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoading(false)
         }
-
-        setLoading(false)
     }
 
     return (
@@ -129,7 +141,7 @@ export default function WishSection({ invitationId, wishes, onWishAdded }: Props
                                         </p>
                                     </div>
                                     <span className="text-stone-400 text-xs">
-                    {timeAgo(wish.created_at)}
+                    {timeAgo(wish.createdAt)}
                   </span>
                                 </div>
                                 <p className="text-stone-600 text-sm leading-relaxed pl-11">

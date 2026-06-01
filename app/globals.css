@@ -1,40 +1,40 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-serif: var(--font-playfair);
+  --color-ivory: #FAF9F6;
+  --color-ivory-dark: #F3F0E6;
+  --color-rosegold: #C4896A;
+  --color-rosegold-light: #DAB09C;
+  --color-text-dark: #2C2A29;
+  --color-text-muted: #7A7571;
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-heading: var(--font-jakarta), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-playfair), ui-serif, Georgia, serif;
 }
 
 :root {
-  --background: #ffffff;
-  --foreground: #111827;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #030712;
-    --foreground: #f9fafb;
-  }
-}
-
-* {
-    @apply border-gray-200;
+  --background: var(--color-ivory);
+  --foreground: var(--color-text-dark);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  font-family: var(--font-sans);
 }
 
-@layer base {
-    input[type="text"],
-    input[type="email"],
-    input[type="password"],
-    input[type="number"],
-    input[type="tel"],
-    input[type="url"] {
-        @apply appearance-none;
-    }
+/* ── Custom scrollbar for dashboard ────────────────────────── */
+.dashboard-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+.dashboard-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.dashboard-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+}
+.dashboard-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.15);
 }

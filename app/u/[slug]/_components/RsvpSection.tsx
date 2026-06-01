@@ -1,12 +1,10 @@
 'use client'
 
-import { createClient } from '@/lib/supabase/client'
 import { useState } from 'react'
 
 type Props = { invitationId: string }
 
 export default function RsvpSection({ invitationId }: Props) {
-    const supabase = createClient()
     const [name, setName] = useState('')
     const [phone, setPhone] = useState('')
     const [guestCount, setGuestCount] = useState(1)
@@ -21,20 +19,29 @@ export default function RsvpSection({ invitationId }: Props) {
         setLoading(true)
         setError('')
 
-        const { error } = await supabase.from('rsvps').insert({
-            invitation_id: invitationId,
-            name,
-            phone,
-            guest_count: guestCount,
-            attendance,
-        })
+        try {
+            const response = await fetch('/api/rsvp', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    invitationId,
+                    name,
+                    phone,
+                    guestCount,
+                    attendance,
+                }),
+            });
 
-        if (error) {
-            setError('Gagal mengirim RSVP. Silakan coba lagi.')
-        } else {
-            setDone(true)
+            if (!response.ok) {
+                throw new Error('Failed to submit RSVP');
+            }
+
+            setDone(true);
+        } catch {
+            setError('Gagal mengirim RSVP. Silakan coba lagi.');
+        } finally {
+            setLoading(false);
         }
-        setLoading(false)
     }
 
     return (

@@ -1,96 +1,53 @@
 'use client'
 
-import { createClient } from '@/lib/supabase/client'
-import { useState, Suspense } from 'react'
+import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 import Link from 'next/link'
 
-function RegisterForm() {
-    const supabase = createClient()
+export default function RegisterPage() {
+    const router = useRouter()
 
-    const [fullName, setFullName] = useState('')
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
+    const [fullName, setFullName] = useState('')
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState('')
-    const [success, setSuccess] = useState(false)
 
     async function handleRegister(e: React.FormEvent) {
         e.preventDefault()
         setLoading(true)
         setError('')
 
-        if (password.length < 8) {
-            setError('Password minimal 8 karakter')
-            setLoading(false)
-            return
+        try {
+            const res = await fetch('/api/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password, fullName }),
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.error || 'Gagal mendaftar');
+            }
+
+            router.push('/dashboard')
+            router.refresh()
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Gagal mendaftar';
+            setError(message);
+            setLoading(false);
         }
-
-        const { error } = await supabase.auth.signUp({
-            email,
-            password,
-            options: {
-                data: { full_name: fullName },
-                emailRedirectTo: `${window.location.origin}/auth/callback`,
-            },
-        })
-
-        if (error) {
-            setError(
-                error.message === 'User already registered'
-                    ? 'Email ini sudah terdaftar, silakan login'
-                    : error.message
-            )
-            setLoading(false)
-            return
-        }
-
-        setSuccess(true)
-        setLoading(false)
-    }
-
-    async function handleGoogleRegister() {
-        await supabase.auth.signInWithOAuth({
-            provider: 'google',
-            options: {
-                redirectTo: `${window.location.origin}/auth/callback`,
-            },
-        })
-    }
-
-    if (success) {
-        return (
-            <div className="bg-white rounded-3xl p-10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100/50 text-center">
-                <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                </div>
-                <h2 className="text-xl font-bold text-gray-900 mb-2">
-                    Cek email kamu!
-                </h2>
-                <p className="text-gray-500 text-sm leading-relaxed mb-6">
-                    Kami telah mengirimkan link verifikasi ke <span className="font-semibold text-gray-900">{email}</span>. Silakan periksa kotak masuk Anda.
-                </p>
-                <div className="pt-6 border-t border-gray-100">
-                    <p className="text-xs text-gray-400">
-                        Tidak menerima email?{' '}
-                        <button onClick={() => setSuccess(false)} className="text-gray-900 font-semibold hover:underline decoration-gray-300 underline-offset-4">
-                            Coba lagi
-                        </button>
-                    </p>
-                </div>
-            </div>
-        )
     }
 
     return (
         <div className="bg-white rounded-2xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100/50">
             <div className="mb-8">
-                <h2 className="text-xl font-semibold text-gray-900">
-                    Buat akun baru
+                <h2 className="text-2xl font-bold font-serif text-text-dark">
+                    Buat Akun Baru
                 </h2>
                 <p className="text-sm text-gray-500 mt-1">
-                    Mulai buat undangan digital Anda dalam hitungan menit
+                    Daftar untuk mulai membuat undangan digital Anda
                 </p>
             </div>
 
@@ -102,29 +59,6 @@ function RegisterForm() {
                 </div>
             )}
 
-            {/* Google Register */}
-            <button
-                onClick={handleGoogleRegister}
-                className="w-full flex items-center justify-center gap-3 border
-                   border-gray-200 rounded-xl py-2.5 text-sm font-medium
-                   text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all
-                   disabled:opacity-50 disabled:cursor-not-allowed mb-6"
-            >
-                <svg width="18" height="18" viewBox="0 0 18 18">
-                    <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/>
-                    <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/>
-                    <path fill="#FBBC05" d="M3.964 10.706A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.706V4.962H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.038l3.007-2.332z"/>
-                    <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.962L3.964 6.294C4.672 4.167 6.656 3.58 9 3.58z"/>
-                </svg>
-                Daftar dengan Google
-            </button>
-
-            <div className="flex items-center gap-3 mb-6">
-                <div className="flex-1 h-px bg-gray-100" />
-                <span className="text-[10px] font-medium uppercase tracking-wider text-gray-400">atau dengan email</span>
-                <div className="flex-1 h-px bg-gray-100" />
-            </div>
-
             <form onSubmit={handleRegister} className="space-y-5">
                 <div>
                     <label className="block text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">
@@ -134,12 +68,12 @@ function RegisterForm() {
                         type="text"
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
-                        placeholder="Nama lengkap Anda"
+                        placeholder="Nama Anda"
                         required
-                        className="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-4 py-2.5
-                       text-sm focus:outline-none focus:ring-2
-                       focus:ring-black/5 focus:border-gray-900
-                       transition-all duration-200"
+                        className="w-full bg-ivory-dark border border-rosegold/20 rounded-xl px-4 py-2.5
+                       text-sm text-text-dark focus:outline-none focus:ring-1
+                       focus:ring-rosegold/50 focus:border-rosegold/50
+                       transition-all duration-200 placeholder:text-text-muted/50"
                     />
                 </div>
 
@@ -153,10 +87,10 @@ function RegisterForm() {
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="nama@email.com"
                         required
-                        className="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-4 py-2.5
-                       text-sm focus:outline-none focus:ring-2
-                       focus:ring-black/5 focus:border-gray-900
-                       transition-all duration-200"
+                        className="w-full bg-ivory-dark border border-rosegold/20 rounded-xl px-4 py-2.5
+                       text-sm text-text-dark focus:outline-none focus:ring-1
+                       focus:ring-rosegold/50 focus:border-rosegold/50
+                       transition-all duration-200 placeholder:text-text-muted/50"
                     />
                 </div>
 
@@ -168,21 +102,22 @@ function RegisterForm() {
                         type="password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        placeholder="Minimal 8 karakter"
+                        placeholder="••••••••"
                         required
-                        className="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-4 py-2.5
-                       text-sm focus:outline-none focus:ring-2
-                       focus:ring-black/5 focus:border-gray-900
-                       transition-all duration-200"
+                        minLength={6}
+                        className="w-full bg-ivory-dark border border-rosegold/20 rounded-xl px-4 py-2.5
+                       text-sm text-text-dark focus:outline-none focus:ring-1
+                       focus:ring-rosegold/50 focus:border-rosegold/50
+                       transition-all duration-200 placeholder:text-text-muted/50"
                     />
                 </div>
 
                 <button
                     type="submit"
                     disabled={loading}
-                    className="w-full bg-gray-900 text-white rounded-xl py-3 text-sm
-                     font-semibold hover:bg-black transition-all active:scale-[0.98]
-                     disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-black/5 mt-2"
+                    className="w-full bg-gradient-to-r from-rosegold to-rosegold-light text-white rounded-xl py-3 text-sm
+                     font-bold hover:shadow-lg hover:shadow-rosegold/20 transition-all active:scale-[0.98]
+                     disabled:opacity-50 disabled:cursor-not-allowed mt-2"
                 >
                     {loading ? (
                         <span className="flex items-center justify-center gap-2">
@@ -190,38 +125,18 @@ function RegisterForm() {
                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                             </svg>
-                            Memproses...
+                            Mendaftar...
                         </span>
-                    ) : 'Buat Akun'}
+                    ) : 'Daftar Sekarang'}
                 </button>
             </form>
 
             <p className="text-center text-sm text-gray-500 mt-8">
                 Sudah punya akun?{' '}
-                <Link href="/login" className="text-gray-900 font-semibold hover:underline decoration-gray-300 underline-offset-4">
+                <Link href="/login" className="text-rosegold font-bold hover:text-rosegold-light transition-colors">
                     Masuk di sini
                 </Link>
             </p>
-
-            <p className="text-center text-[10px] text-gray-400 mt-6 leading-relaxed">
-                Dengan mendaftar, Anda menyetujui <Link href="/terms" className="hover:text-gray-600 underline">Syarat & Ketentuan</Link> serta <Link href="/privacy" className="hover:text-gray-600 underline">Kebijakan Privasi</Link> kami.
-            </p>
         </div>
-    )
-}
-
-export default function RegisterPage() {
-    return (
-        <Suspense fallback={
-            <div className="bg-white rounded-2xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100/50 flex flex-col items-center justify-center min-h-[400px]">
-                <svg className="animate-spin h-8 w-8 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <p className="text-sm text-gray-500 mt-4">Memuat...</p>
-            </div>
-        }>
-            <RegisterForm />
-        </Suspense>
     )
 }
